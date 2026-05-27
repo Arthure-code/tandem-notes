@@ -1,0 +1,19 @@
+# ─── NODE / TAURI ─────────────────────────────────────────────
+notes-tauri/node_modules/
+notes-tauri/src-tauri/target/
+notes-tauri/.env
+
+# ─── .NET / API ───────────────────────────────────────────────
+notes-api/bin/
+notes-api/obj/
+notes-api/*.db
+notes-api/*.db-shm
+notes-api/*.db-wal
+
+# ─── SYSTÈME ──────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.log
+
+# ─── VISUAL STUDIO ────────────────────────────────────────────
+notes-api/.vs/

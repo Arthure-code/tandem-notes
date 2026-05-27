@@ -4,16 +4,14 @@ notes-tauri/src-tauri/target/
 notes-tauri/.env
 
 # ─── .NET / API ───────────────────────────────────────────────
-notes-api/bin/
-notes-api/obj/
-notes-api/*.db
-notes-api/*.db-shm
-notes-api/*.db-wal
+notes-api/.vs/
+notes-api/notes-api/bin/
+notes-api/notes-api/obj/
+notes-api/notes-api/*.db
+notes-api/notes-api/*.db-shm
+notes-api/notes-api/*.db-wal
 
 # ─── SYSTÈME ──────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
 *.log
-
-# ─── VISUAL STUDIO ────────────────────────────────────────────
-notes-api/.vs/

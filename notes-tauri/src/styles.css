@@ -1,0 +1,279 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  display: flex;
+  height: 100vh;
+  font-family: 'Segoe UI', sans-serif;
+  background: #1e1e2e;
+  color: #cdd6f4;
+}
+
+/* ─── SIDEBAR ─────────────────────────────────────────────── */
+.sidebar {
+  width: 280px;
+  background: #181825;
+  border-right: 1px solid #313244;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-header {
+  padding: 20px 16px;
+  border-bottom: 1px solid #313244;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sidebar-header h1 {
+  font-size: 1.2rem;
+  color: #cba6f7;
+}
+
+#btn-nouvelle {
+  background: #cba6f7;
+  color: #1e1e2e;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+#btn-nouvelle:hover {
+  background: #b4befe;
+}
+
+#liste-notes {
+  list-style: none;
+  overflow-y: auto;
+  flex: 1;
+  padding: 8px;
+}
+
+#liste-notes li {
+  padding: 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-bottom: 4px;
+  border: 1px solid transparent;
+  transition: background 0.2s;
+}
+
+#liste-notes li:hover {
+  background: #313244;
+}
+
+#liste-notes li.active {
+  background: #313244;
+  border-color: #cba6f7;
+}
+
+.note-titre {
+  font-weight: bold;
+  font-size: 0.95rem;
+  color: #cdd6f4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.note-date {
+  font-size: 0.75rem;
+  color: #6c7086;
+  margin-top: 4px;
+}
+
+/* ─── ACTIONS SUR CHAQUE NOTE ────────────────────────────── */
+.note-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.note-actions button {
+  flex: 1;
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background 0.2s;
+}
+
+.btn-edit {
+  background: #b4befe;
+  color: #1e1e2e;
+}
+
+.btn-edit:hover {
+  background: #cba6f7;
+}
+
+.btn-delete {
+  background: #f38ba8;
+  color: #1e1e2e;
+}
+
+.btn-delete:hover {
+  background: #eba0ac;
+}
+
+/* ─── ZONE PRINCIPALE ────────────────────────────────────── */
+.contenu {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 32px;
+  gap: 16px;
+  overflow-y: auto;
+}
+
+.etat-vide {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6c7086;
+  font-size: 1.1rem;
+}
+
+/* ─── VUE DÉTAILS ────────────────────────────────────────── */
+.details-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid #313244;
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+}
+
+.details-header h2 {
+  font-size: 1.6rem;
+  color: #cba6f7;
+}
+
+.details-header span {
+  font-size: 0.8rem;
+  color: #6c7086;
+}
+
+#detail-contenu {
+  font-size: 1rem;
+  line-height: 1.7;
+  color: #cdd6f4;
+  white-space: pre-wrap;
+}
+
+/* ─── FORMULAIRE ─────────────────────────────────────────── */
+#formulaire {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  height: 100%;
+}
+
+#input-titre {
+  font-size: 1.5rem;
+  font-weight: bold;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid #313244;
+  color: #cdd6f4;
+  padding: 8px 0;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+#input-titre:focus {
+  border-color: #cba6f7;
+}
+
+#input-details {
+  flex: 1;
+  background: #181825;
+  border: 1px solid #313244;
+  border-radius: 12px;
+  color: #cdd6f4;
+  padding: 16px;
+  font-size: 1rem;
+  font-family: 'Segoe UI', sans-serif;
+  resize: none;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+#input-details:focus {
+  border-color: #cba6f7;
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+}
+
+button {
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: none;
+  font-size: 0.95rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+#btn-sauvegarder {
+  background: #a6e3a1;
+  color: #1e1e2e;
+}
+
+#btn-sauvegarder:hover {
+  background: #94e2d5;
+}
+
+.btn-secondary {
+  background: #313244;
+  color: #cdd6f4;
+}
+
+.btn-secondary:hover {
+  background: #45475a;
+}
+
+.statut {
+  font-size: 0.85rem;
+  color: #a6e3a1;
+}
+
+.statut.erreur {
+  color: #f38ba8;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.details-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+#btn-fermer {
+  background: #313244;
+  color: #cdd6f4;
+  padding: 4px 10px;
+  font-size: 0.9rem;
+  border-radius: 6px;
+}
+
+#btn-fermer:hover {
+  background: #f38ba8;
+  color: #1e1e2e;
+}

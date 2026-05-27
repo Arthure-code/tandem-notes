@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bloc-notes</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h1>📝 Mes Notes</h1>
+      <button id="btn-nouvelle">+ Nouvelle</button>
+    </div>
+    <ul id="liste-notes"></ul>
+  </aside>
+
+  <!-- ZONE PRINCIPALE -->
+  <main class="contenu">
+
+    <!-- État vide -->
+    <div id="etat-vide" class="etat-vide">
+      <p>Sélectionnez une note ou créez-en une nouvelle</p>
+    </div>
+
+    <!-- Vue détails (lecture) -->
+    <div id="vue-details" class="hidden">
+      <div class="details-header">
+        <h2 id="detail-titre"></h2>
+        <div class="details-actions">
+          <span id="detail-date"></span>
+          <button id="btn-fermer">✕</button>
+        </div>
+      </div>
+      <p id="detail-contenu"></p>
+    </div>
+
+    <!-- Formulaire création/édition -->
+    <div id="formulaire" class="hidden">
+      <input type="text" id="input-titre" placeholder="Titre de la note..." maxlength="100" />
+      <textarea id="input-details" placeholder="Écrivez vos détails ici..."></textarea>
+      <div class="actions">
+        <button id="btn-sauvegarder">💾 Sauvegarder</button>
+        <button id="btn-annuler" class="btn-secondary">Annuler</button>
+      </div>
+      <p id="msg-statut" class="statut hidden"></p>
+    </div>
+
+  </main>
+
+  <script type="module" src="main.js"></script>
+</body>
+
+</html>

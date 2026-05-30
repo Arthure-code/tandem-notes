@@ -277,3 +277,18 @@ button {
   background: #f38ba8;
   color: #1e1e2e;
 }
+
+#btn-actualiser {
+  background: #313244;
+  color: #cdd6f4;
+  border: 1px solid #cba6f7;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+#btn-actualiser:hover {
+  background: #45475a;
+}

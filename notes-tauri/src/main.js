@@ -29,6 +29,7 @@ const detailContenu  = document.getElementById('detail-contenu');
 const msgStatut      = document.getElementById('msg-statut');
 const btnFermer = document.getElementById('btn-fermer');
 
+
 // ─── ÉTAT ─────────────────────────────────────────────────────
 let noteActive = null;
 let estNouvelle = false;
@@ -213,3 +214,14 @@ btnAnnuler.addEventListener('click', () => {
 
 // ─── INITIALISATION ───────────────────────────────────────────
 chargerNotes();
+
+// ─── ACTUALISER ───────────────────────────────────────────────
+const btnActualiser = document.getElementById('btn-actualiser');
+
+btnActualiser.addEventListener('click', async () => {
+  btnActualiser.textContent = '⏳ Chargement...';
+  btnActualiser.disabled = true;
+  await chargerNotes();
+  btnActualiser.textContent = '🔄 Actualiser';
+  btnActualiser.disabled = false;
+});

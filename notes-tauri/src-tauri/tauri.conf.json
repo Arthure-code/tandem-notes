@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "notes-tauri",
+  "productName": "Bloc-notes",
   "version": "0.1.0",
-  "identifier": "notes-tauri",
+  "identifier": "com.arthure.notesapp",
   "build": {
     "frontendDist": "../src"
   },
@@ -10,9 +10,11 @@
     "withGlobalTauri": true,
     "windows": [
       {
-        "title": "notes-tauri",
-        "width": 800,
-        "height": 600
+        "title": "Bloc-notes",
+        "width": 1000,
+        "height": 700,
+        "minWidth": 800,
+        "minHeight": 600
       }
     ],
     "security": {

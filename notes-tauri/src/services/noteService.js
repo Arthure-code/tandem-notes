@@ -1,5 +1,5 @@
 // ─── CONFIGURATION API ────────────────────────────────────────
-const API_URL = 'http://localhost:5011/api/notes';
+const API_URL = 'https://notes-api-tp3-agdjeec8e5aef8hs.canadacentral-01.azurewebsites.net/api/notes';
 
 // ─── OBTENIR TOUTES LES NOTES ─────────────────────────────────
 export async function getAllNotes() {

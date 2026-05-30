@@ -1,4 +1,4 @@
-
+﻿
 using Microsoft.EntityFrameworkCore;
 using notes_api.Data;
 using notes_api.Interfaces;
@@ -20,10 +20,13 @@ namespace notes_api
             builder.Services.AddSwaggerGen();
 
             // SQLite
-            builder.Services.AddDbContext<AppDbContext>(options =>
-                options.UseSqlite("Data Source=notes.db"));
+            // builder.Services.AddDbContext<AppDbContext>(options =>options.UseSqlite("Data Source=notes.db"));
 
-            // Injection de d�pendances
+            // ─── SQL SERVER ───────────────────────────────────────────────
+            builder.Services.AddDbContext<AppDbContext>(options =>
+                options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+            // Injection de dépendances
             builder.Services.AddScoped<INoteService, NoteService>();
 
             // CORS
@@ -40,7 +43,7 @@ namespace notes_api
 
             var app = builder.Build();
 
-            // Cr�er la base de donn�es automatiquement
+            // Créer la base de données automatiquement
             using (var scope = app.Services.CreateScope())
             {
                 var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();

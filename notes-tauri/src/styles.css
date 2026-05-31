@@ -297,14 +297,17 @@ button {
 @media (max-width: 768px) {
   body {
     flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
   }
 
   .sidebar {
     width: 100%;
     height: auto;
-    max-height: 40vh;
+    max-height: 50vh;
     border-right: none;
     border-bottom: 1px solid #313244;
+    overflow-y: auto;
   }
 
   .sidebar-header {
@@ -312,6 +315,10 @@ button {
     flex-wrap: wrap;
     gap: 8px;
     padding: 12px;
+    position: sticky;
+    top: 0;
+    background: #181825;
+    z-index: 10;
   }
 
   .sidebar-header h1 {
@@ -321,12 +328,13 @@ button {
 
   #btn-nouvelle, #btn-actualiser {
     flex: 1;
-    padding: 8px;
-    font-size: 0.85rem;
+    padding: 10px;
+    font-size: 0.9rem;
   }
 
   #liste-notes {
-    max-height: 25vh;
+    overflow-y: auto;
+    padding-bottom: 16px;
   }
 
   #liste-notes li {
@@ -334,14 +342,20 @@ button {
   }
 
   .note-actions button {
-    padding: 6px;
-    font-size: 0.75rem;
+    padding: 8px;
+    font-size: 0.85rem;
   }
 
   .contenu {
-    padding: 16px;
+    width: 100%;
     flex: 1;
+    padding: 16px;
     overflow-y: auto;
+    height: 50vh;
+  }
+
+  .etat-vide {
+    min-height: 150px;
   }
 
   .details-header {
@@ -356,6 +370,11 @@ button {
 
   #input-titre {
     font-size: 1.1rem;
+  }
+
+  #input-details {
+    min-height: 150px;
+    flex: none;
   }
 
   .actions {

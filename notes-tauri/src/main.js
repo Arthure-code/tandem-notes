@@ -18,6 +18,9 @@ const listeNotes     = document.getElementById('liste-notes');
 const btnNouvelle    = document.getElementById('btn-nouvelle');
 const btnSauvegarder = document.getElementById('btn-sauvegarder');
 const btnAnnuler     = document.getElementById('btn-annuler');
+const btnActualiser  = document.getElementById('btn-actualiser');
+const btnRetour      = document.getElementById('btn-retour');
+const btnFermer      = document.getElementById('btn-fermer');
 const inputTitre     = document.getElementById('input-titre');
 const inputDetails   = document.getElementById('input-details');
 const formulaire     = document.getElementById('formulaire');
@@ -27,12 +30,34 @@ const detailTitre    = document.getElementById('detail-titre');
 const detailDate     = document.getElementById('detail-date');
 const detailContenu  = document.getElementById('detail-contenu');
 const msgStatut      = document.getElementById('msg-statut');
-const btnFermer = document.getElementById('btn-fermer');
-
+const sidebar        = document.querySelector('.sidebar');
+const contenu        = document.querySelector('.contenu');
 
 // ─── ÉTAT ─────────────────────────────────────────────────────
 let noteActive = null;
 let estNouvelle = false;
+
+// ─── DÉTECTION MOBILE ─────────────────────────────────────────
+const isMobile = () => window.innerWidth <= 768;
+
+// ─── NAVIGATION MOBILE ────────────────────────────────────────
+function afficherContenu() {
+  if (isMobile()) {
+    contenu.classList.add('visible-mobile');
+    sidebar.classList.add('hidden-mobile');
+    btnRetour.style.display = 'flex';
+  }
+}
+
+function retourListe() {
+  contenu.classList.remove('visible-mobile');
+  sidebar.classList.remove('hidden-mobile');
+  btnRetour.style.display = 'none';
+  noteActive = null;
+  formulaire.classList.add('hidden');
+  vueDetails.classList.add('hidden');
+  etatVide.classList.remove('hidden');
+}
 
 // ─── FORMATER LA DATE ─────────────────────────────────────────
 function formaterDate(dateStr) {
@@ -72,7 +97,6 @@ function afficherListe(notes) {
       </div>
     `;
 
-    // Clic sur la note → voir les détails
     li.addEventListener('click', (e) => {
       if (e.target.classList.contains('btn-edit')) {
         editerNote(note);
@@ -99,6 +123,7 @@ function voirDetails(note) {
   vueDetails.classList.remove('hidden');
 
   afficherListe(getLocalNotes());
+  afficherContenu();
 }
 
 // ─── ÉDITER UNE NOTE ──────────────────────────────────────────
@@ -114,6 +139,7 @@ function editerNote(note) {
   formulaire.classList.remove('hidden');
 
   inputTitre.focus();
+  afficherContenu();
 }
 
 // ─── NOUVELLE NOTE ────────────────────────────────────────────
@@ -129,14 +155,8 @@ function nouvelleNote() {
   formulaire.classList.remove('hidden');
 
   inputTitre.focus();
+  afficherContenu();
 }
-
-btnFermer.addEventListener('click', () => {
-  noteActive = null;
-  vueDetails.classList.add('hidden');
-  etatVide.classList.remove('hidden');
-  afficherListe(getLocalNotes());
-});
 
 // ─── CHARGER LES NOTES ────────────────────────────────────────
 async function chargerNotes() {
@@ -195,6 +215,7 @@ async function supprimerNote(note) {
       formulaire.classList.add('hidden');
       vueDetails.classList.add('hidden');
       etatVide.classList.remove('hidden');
+      if (isMobile()) retourListe();
     }
 
     afficherStatut('Note supprimée !');
@@ -207,16 +228,21 @@ async function supprimerNote(note) {
 // ─── ÉVÉNEMENTS ───────────────────────────────────────────────
 btnNouvelle.addEventListener('click', nouvelleNote);
 btnSauvegarder.addEventListener('click', sauvegarder);
+btnRetour.addEventListener('click', retourListe);
+
+btnFermer.addEventListener('click', () => {
+  noteActive = null;
+  vueDetails.classList.add('hidden');
+  etatVide.classList.remove('hidden');
+  afficherListe(getLocalNotes());
+  if (isMobile()) retourListe();
+});
+
 btnAnnuler.addEventListener('click', () => {
   formulaire.classList.add('hidden');
   noteActive ? voirDetails(noteActive) : etatVide.classList.remove('hidden');
+  if (isMobile() && !noteActive) retourListe();
 });
-
-// ─── INITIALISATION ───────────────────────────────────────────
-chargerNotes();
-
-// ─── ACTUALISER ───────────────────────────────────────────────
-const btnActualiser = document.getElementById('btn-actualiser');
 
 btnActualiser.addEventListener('click', async () => {
   btnActualiser.textContent = '⏳ Chargement...';
@@ -225,3 +251,6 @@ btnActualiser.addEventListener('click', async () => {
   btnActualiser.textContent = '🔄 Actualiser';
   btnActualiser.disabled = false;
 });
+
+// ─── INITIALISATION ───────────────────────────────────────────
+chargerNotes();

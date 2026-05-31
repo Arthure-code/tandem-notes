@@ -68,7 +68,7 @@ body {
 .statut.erreur { color: #f38ba8; }
 .hidden { display: none !important; }
 
-/* ─── MOBILE ─────────────────────────────────────────────── */
+/* ─── MOBILE PORTRAIT ────────────────────────────────────── */
 @media (max-width: 768px) {
   .sidebar {
     position: fixed !important;
@@ -102,5 +102,68 @@ body {
 
   #btn-retour {
     display: block !important;
+  }
+}
+
+/* ─── MOBILE PAYSAGE ─────────────────────────────────────── */
+@media (max-height: 500px) and (orientation: landscape) {
+  .sidebar {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    width: 100% !important;
+    min-width: 100% !important;
+    height: 100vh;
+    z-index: 10;
+    transition: transform 0.3s ease;
+  }
+
+  .sidebar.hidden-mobile {
+    transform: translateX(-100%);
+  }
+
+  #contenu {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    width: 100% !important;
+    height: 100vh;
+    z-index: 20;
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+    overflow-y: auto;
+  }
+
+  #contenu.visible-mobile {
+    transform: translateX(0) !important;
+  }
+
+  #btn-retour {
+    display: block !important;
+  }
+
+  .sidebar-header {
+    padding: 8px !important;
+  }
+
+  #btn-nouvelle, #btn-actualiser {
+    padding: 6px !important;
+    font-size: 0.75rem !important;
+  }
+
+  #liste-notes li {
+    padding: 6px !important;
+  }
+
+  #input-titre {
+    font-size: 1rem !important;
+  }
+
+  #input-details {
+    min-height: 80px !important;
+  }
+
+  .actions button {
+    padding: 6px 12px !important;
   }
 }

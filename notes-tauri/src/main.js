@@ -30,8 +30,8 @@ const detailTitre    = document.getElementById('detail-titre');
 const detailDate     = document.getElementById('detail-date');
 const detailContenu  = document.getElementById('detail-contenu');
 const msgStatut      = document.getElementById('msg-statut');
-const sidebar        = document.querySelector('.sidebar');
-const contenu        = document.querySelector('.contenu');
+const sidebar        = document.getElementById('sidebar');
+const contenu        = document.getElementById('contenu');
 
 // ─── ÉTAT ─────────────────────────────────────────────────────
 let noteActive = null;
@@ -45,14 +45,14 @@ function afficherContenu() {
   if (isMobile()) {
     contenu.classList.add('visible-mobile');
     sidebar.classList.add('hidden-mobile');
-    btnRetour.style.display = 'flex';
+    btnRetour.classList.remove('d-none');
   }
 }
 
 function retourListe() {
   contenu.classList.remove('visible-mobile');
   sidebar.classList.remove('hidden-mobile');
-  btnRetour.style.display = 'none';
+  btnRetour.classList.add('d-none');
   noteActive = null;
   formulaire.classList.add('hidden');
   vueDetails.classList.add('hidden');
@@ -245,10 +245,10 @@ btnAnnuler.addEventListener('click', () => {
 });
 
 btnActualiser.addEventListener('click', async () => {
-  btnActualiser.textContent = '⏳ Chargement...';
+  btnActualiser.textContent = '⏳';
   btnActualiser.disabled = true;
   await chargerNotes();
-  btnActualiser.textContent = '🔄 Actualiser';
+  btnActualiser.textContent = '🔄';
   btnActualiser.disabled = false;
 });
 

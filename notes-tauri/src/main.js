@@ -10,34 +10,55 @@ import {
   getLocalNotes,
   addLocalNote,
   updateLocalNote,
-  deleteLocalNote
+  deleteLocalNote,
+  addPendingNote,
+  getPendingNotes,
+  removePendingNote,
+  clearPendingNotes
 } from './services/localService.js';
 
+// ─── MESSAGES CONVIVIAUX ──────────────────────────────────────
+const MESSAGES = {
+  noteCreee:         '✅ Note enregistrée !',
+  noteModifiee:      '✅ Note mise à jour !',
+  noteSupprimee:     '🗑️ Note supprimée.',
+  noteLocale:        '💾 Sauvegardé localement.',
+  modifLocale:       '💾 Modification sauvegardée.',
+  suppressionLocale: '🗑️ Suppression enregistrée.',
+  syncEnCours:       '🔄 Synchronisation en cours...',
+  syncComplete:      '✅ Tout est à jour !',
+  syncPartielle:     '⚠️ Certaines notes n\'ont pas pu être synchronisées.',
+  titreObligatoire:  '⚠️ Veuillez entrer un titre.',
+  erreurReseau:      '⚠️ Une erreur est survenue. Veuillez réessayer.',
+};
+
 // ─── ÉLÉMENTS DOM ─────────────────────────────────────────────
-const listeNotes     = document.getElementById('liste-notes');
-const btnNouvelle    = document.getElementById('btn-nouvelle');
-const btnSauvegarder = document.getElementById('btn-sauvegarder');
-const btnAnnuler     = document.getElementById('btn-annuler');
-const btnActualiser  = document.getElementById('btn-actualiser');
-const btnRetour      = document.getElementById('btn-retour');
-const btnFermer      = document.getElementById('btn-fermer');
-const inputTitre     = document.getElementById('input-titre');
-const inputDetails   = document.getElementById('input-details');
-const formulaire     = document.getElementById('formulaire');
-const etatVide       = document.getElementById('etat-vide');
-const vueDetails     = document.getElementById('vue-details');
-const detailTitre    = document.getElementById('detail-titre');
-const detailDate     = document.getElementById('detail-date');
-const detailContenu  = document.getElementById('detail-contenu');
-const msgStatut      = document.getElementById('msg-statut');
-const sidebar        = document.getElementById('sidebar');
-const contenu        = document.getElementById('contenu');
-const sectionHeader  = document.getElementById('section-header');
-const sectionTitre   = document.getElementById('section-titre');
+const listeNotes      = document.getElementById('liste-notes');
+const btnNouvelle     = document.getElementById('btn-nouvelle');
+const btnSauvegarder  = document.getElementById('btn-sauvegarder');
+const btnAnnuler      = document.getElementById('btn-annuler');
+const btnActualiser   = document.getElementById('btn-actualiser');
+const btnRetour       = document.getElementById('btn-retour');
+const btnFermer       = document.getElementById('btn-fermer');
+const inputTitre      = document.getElementById('input-titre');
+const inputDetails    = document.getElementById('input-details');
+const formulaire      = document.getElementById('formulaire');
+const etatVide        = document.getElementById('etat-vide');
+const vueDetails      = document.getElementById('vue-details');
+const detailTitre     = document.getElementById('detail-titre');
+const detailDate      = document.getElementById('detail-date');
+const detailContenu   = document.getElementById('detail-contenu');
+const msgStatut       = document.getElementById('msg-statut');
+const sidebar         = document.getElementById('sidebar');
+const contenu         = document.getElementById('contenu');
+const sectionHeader   = document.getElementById('section-header');
+const sectionTitre    = document.getElementById('section-titre');
+const statusIndicator = document.getElementById('status-indicator');
 
 // ─── ÉTAT ─────────────────────────────────────────────────────
 let noteActive = null;
 let estNouvelle = false;
+let isOnline = navigator.onLine;
 
 // ─── DÉTECTION MOBILE ─────────────────────────────────────────
 const isMobile = () => window.innerWidth <= 768;
@@ -50,6 +71,49 @@ function afficherHeader(titre) {
 
 function cacherHeader() {
   sectionHeader.classList.add('hidden');
+}
+
+// ─── INDICATEUR EN LIGNE / HORS LIGNE ─────────────────────────
+function updateOnlineStatus() {
+  isOnline = navigator.onLine;
+  if (statusIndicator) {
+    statusIndicator.textContent = isOnline ? '🟢 Connecté' : '🔴 Hors ligne';
+    statusIndicator.className = isOnline ? 'status-online' : 'status-offline';
+  }
+  if (isOnline) syncPendingNotes();
+}
+
+// ─── SYNCHRONISER LES NOTES EN ATTENTE ────────────────────────
+async function syncPendingNotes() {
+  const pending = getPendingNotes();
+  if (pending.length === 0) return;
+
+  afficherStatut(MESSAGES.syncEnCours);
+
+  for (let i = pending.length - 1; i >= 0; i--) {
+    const { note, operation } = pending[i];
+    try {
+      if (operation === 'create') {
+        const created = await createNote(note.titre, note.details);
+        updateLocalNote(note.id, created.titre, created.details);
+      } else if (operation === 'update') {
+        await updateNote(note.id, note.titre, note.details);
+      } else if (operation === 'delete') {
+        await deleteNote(note.id);
+      }
+      removePendingNote(i);
+    } catch (err) {
+      console.warn('Sync échouée', err);
+    }
+  }
+
+  await chargerNotes();
+  const remaining = getPendingNotes().length;
+  if (remaining === 0) {
+    afficherStatut(MESSAGES.syncComplete);
+  } else {
+    afficherStatut(MESSAGES.syncPartielle, true);
+  }
 }
 
 // ─── NAVIGATION MOBILE ────────────────────────────────────────
@@ -97,12 +161,17 @@ function afficherListe(notes) {
     return;
   }
 
+  const pending = getPendingNotes();
+
   notes.forEach(note => {
     const li = document.createElement('li');
     if (noteActive && noteActive.id === note.id) li.classList.add('active');
 
+    const isPending = pending.some(p => p.note.id === note.id);
+    const pendingBadge = isPending ? '<span class="badge-pending">⏳</span>' : '';
+
     li.innerHTML = `
-      <div class="note-titre">${note.titre || 'Sans titre'}</div>
+      <div class="note-titre">${note.titre || 'Sans titre'} ${pendingBadge}</div>
       <div class="note-date">${formaterDate(note.updatedAt)}</div>
       <div class="note-actions">
         <button class="btn-edit">✏️ Modifier</button>
@@ -181,7 +250,6 @@ async function chargerNotes() {
     syncFromApi(notes);
     afficherListe(notes);
   } catch (err) {
-    console.warn('API indisponible, chargement local');
     afficherListe(getLocalNotes());
   }
 }
@@ -192,29 +260,63 @@ async function sauvegarder() {
   const details = inputDetails.value.trim();
 
   if (!titre) {
-    afficherStatut('Le titre est obligatoire', true);
+    afficherStatut(MESSAGES.titreObligatoire, true);
     inputTitre.focus();
     return;
   }
 
+  if (!isOnline) {
+    // ─── MODE HORS LIGNE ──────────────────────────────────────
+    if (estNouvelle) {
+      const noteLocale = {
+        id: `local_${Date.now()}`,
+        titre,
+        details,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      addLocalNote(noteLocale);
+      addPendingNote(noteLocale, 'create');
+      noteActive = noteLocale;
+      estNouvelle = false;
+      afficherStatut(MESSAGES.noteLocale);
+      voirDetails(noteLocale);
+    } else {
+      const noteModifiee = {
+        ...noteActive,
+        titre,
+        details,
+        updatedAt: new Date().toISOString()
+      };
+      updateLocalNote(noteActive.id, titre, details);
+      addPendingNote(noteModifiee, 'update');
+      noteActive = noteModifiee;
+      afficherStatut(MESSAGES.modifLocale);
+      voirDetails(noteModifiee);
+    }
+    afficherListe(getLocalNotes());
+    return;
+  }
+
+  // ─── MODE EN LIGNE ────────────────────────────────────────
   try {
     if (estNouvelle) {
       const note = await createNote(titre, details);
       addLocalNote(note);
       noteActive = note;
       estNouvelle = false;
-      afficherStatut('Note créée !');
+      afficherStatut(MESSAGES.noteCreee);
       voirDetails(note);
     } else {
       const note = await updateNote(noteActive.id, titre, details);
       updateLocalNote(noteActive.id, titre, details);
       noteActive = note;
-      afficherStatut('Note modifiée !');
+      afficherStatut(MESSAGES.noteModifiee);
       voirDetails(note);
     }
     await chargerNotes();
   } catch (err) {
-    afficherStatut('Erreur : ' + err.message, true);
+    afficherStatut(MESSAGES.erreurReseau, true);
   }
 }
 
@@ -222,10 +324,10 @@ async function sauvegarder() {
 async function supprimerNote(note) {
   if (!confirm(`Supprimer "${note.titre}" ?`)) return;
 
-  try {
-    await deleteNote(note.id);
+  if (!isOnline) {
     deleteLocalNote(note.id);
-
+    addPendingNote(note, 'delete');
+    afficherStatut(MESSAGES.suppressionLocale);
     if (noteActive && noteActive.id === note.id) {
       noteActive = null;
       formulaire.classList.add('hidden');
@@ -234,11 +336,25 @@ async function supprimerNote(note) {
       cacherHeader();
       if (isMobile()) retourListe();
     }
+    afficherListe(getLocalNotes());
+    return;
+  }
 
-    afficherStatut('Note supprimée !');
+  try {
+    await deleteNote(note.id);
+    deleteLocalNote(note.id);
+    if (noteActive && noteActive.id === note.id) {
+      noteActive = null;
+      formulaire.classList.add('hidden');
+      vueDetails.classList.add('hidden');
+      etatVide.classList.remove('hidden');
+      cacherHeader();
+      if (isMobile()) retourListe();
+    }
+    afficherStatut(MESSAGES.noteSupprimee);
     await chargerNotes();
   } catch (err) {
-    afficherStatut('Erreur : ' + err.message, true);
+    afficherStatut(MESSAGES.erreurReseau, true);
   }
 }
 
@@ -271,5 +387,10 @@ btnActualiser.addEventListener('click', async () => {
   btnActualiser.disabled = false;
 });
 
+// ─── ÉVÉNEMENTS RÉSEAU ────────────────────────────────────────
+window.addEventListener('online', updateOnlineStatus);
+window.addEventListener('offline', updateOnlineStatus);
+
 // ─── INITIALISATION ───────────────────────────────────────────
+updateOnlineStatus();
 chargerNotes();

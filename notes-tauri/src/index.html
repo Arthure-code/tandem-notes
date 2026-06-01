@@ -17,6 +17,10 @@
     <aside id="sidebar" class="sidebar bg-dark border-end d-flex flex-column">
       <div class="p-3 border-bottom">
         <h1 class="fs-5 text-purple mb-2">📝 Mes Notes</h1>
+
+        <!-- Indicateur de connexion -->
+        <div id="status-indicator" class="status-online mb-2">🟢 Connecté</div>
+
         <div class="d-flex gap-2">
           <button id="btn-nouvelle" class="btn btn-purple flex-fill">+ Nouvelle</button>
           <button id="btn-actualiser" class="btn btn-outline-secondary flex-fill">🔄</button>
@@ -42,6 +46,7 @@
       <div id="etat-vide" class="d-flex flex-grow-1 align-items-center justify-content-center">
         <p>Sélectionnez une note ou cliquez sur <strong>+ Nouvelle</strong></p>
       </div>
+
       <!-- Vue détails -->
       <div id="vue-details" class="hidden p-4">
         <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">

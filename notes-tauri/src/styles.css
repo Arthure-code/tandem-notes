@@ -76,6 +76,17 @@ body {
   box-shadow: none !important;
 }
 
+#input-titre::placeholder {
+  color: #6c7086 !important;
+  font-size: 1.2rem;
+  font-style: italic;
+}
+
+#input-details::placeholder {
+  color: #6c7086 !important;
+  font-style: italic;
+}
+
 .statut { font-size: 0.85rem; color: #a6e3a1; }
 .statut.erreur { color: #f38ba8; }
 .hidden { display: none !important; }

@@ -169,7 +169,7 @@ function nouvelleNote() {
   vueDetails.classList.add('hidden');
   formulaire.classList.remove('hidden');
 
-  afficherHeader('➕ Nouvelle note');
+  cacherHeader();
   inputTitre.focus();
   afficherContenu();
 }

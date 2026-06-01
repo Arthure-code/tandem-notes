@@ -44,3 +44,30 @@ export function deleteLocalNote(id) {
   const filtered = notes.filter(n => n.id !== id);
   saveLocalNotes(filtered);
 }
+
+const PENDING_KEY = 'notes_pending_sync';
+
+// ─── AJOUTER UNE NOTE EN ATTENTE DE SYNC ──────────────────────
+export function addPendingNote(note, operation) {
+  const pending = getPendingNotes();
+  pending.push({ note, operation, timestamp: Date.now() });
+  localStorage.setItem(PENDING_KEY, JSON.stringify(pending));
+}
+
+// ─── OBTENIR LES NOTES EN ATTENTE ─────────────────────────────
+export function getPendingNotes() {
+  const data = localStorage.getItem(PENDING_KEY);
+  return data ? JSON.parse(data) : [];
+}
+
+// ─── VIDER LES NOTES EN ATTENTE ───────────────────────────────
+export function clearPendingNotes() {
+  localStorage.removeItem(PENDING_KEY);
+}
+
+// ─── SUPPRIMER UNE NOTE EN ATTENTE PAR INDEX ──────────────────
+export function removePendingNote(index) {
+  const pending = getPendingNotes();
+  pending.splice(index, 1);
+  localStorage.setItem(PENDING_KEY, JSON.stringify(pending));
+}

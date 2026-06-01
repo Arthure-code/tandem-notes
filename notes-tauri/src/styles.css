@@ -100,6 +100,36 @@ body {
 .statut.erreur { color: #f38ba8; }
 .hidden { display: none !important; }
 
+/* ─── INDICATEUR DE CONNEXION ────────────────────────────── */
+#status-indicator {
+  font-size: 0.78rem;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 20px;
+  display: inline-block;
+  width: fit-content;
+  margin-top: 6px;
+  margin-bottom: 8px;
+}
+
+.status-online {
+  background: rgba(166, 227, 161, 0.15);
+  color: #a6e3a1;
+  border: 1px solid rgba(166, 227, 161, 0.3);
+}
+
+.status-offline {
+  background: rgba(243, 139, 168, 0.15);
+  color: #f38ba8;
+  border: 1px solid rgba(243, 139, 168, 0.3);
+}
+
+/* ─── BADGE EN ATTENTE ───────────────────────────────────── */
+.badge-pending {
+  font-size: 0.7rem;
+  opacity: 0.8;
+}
+
 /* ─── MOBILE PORTRAIT ────────────────────────────────────── */
 @media (max-width: 768px) {
   .sidebar {

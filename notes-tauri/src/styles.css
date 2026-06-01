@@ -87,6 +87,15 @@ body {
   font-style: italic;
 }
 
+#etat-vide p {
+  color: #6c7086;
+  font-size: 1.1rem;
+  font-style: italic;
+  background: #181825;
+  padding: 16px 24px;
+  border-radius: 12px;
+  border: 1px solid #313244;
+}
 .statut { font-size: 0.85rem; color: #a6e3a1; }
 .statut.erreur { color: #f38ba8; }
 .hidden { display: none !important; }

@@ -49,6 +49,18 @@ body {
 
 .contenu { background: #1e1e2e; }
 
+/* ─── EN-TÊTE DE SECTION ─────────────────────────────────── */
+#section-header {
+  background: #181825;
+  border-bottom: 2px solid #cba6f7 !important;
+}
+
+#section-titre {
+  color: #cba6f7;
+  font-size: 1rem;
+  font-weight: bold;
+}
+
 #input-titre {
   color: #cdd6f4 !important;
   border-color: #313244 !important;
@@ -100,14 +112,18 @@ body {
     transform: translateX(0) !important;
   }
 
- #btn-retour {
+  #btn-retour {
     display: block !important;
-    padding: 16px 16px 16px 16px !important;
+    padding: 16px !important;
     margin-top: 24px !important;
     font-size: 1.1rem !important;
     min-height: 56px !important;
     width: 100% !important;
     text-align: left !important;
+  }
+
+  #section-header {
+    padding: 8px 16px !important;
   }
 }
 
@@ -146,12 +162,16 @@ body {
 
   #btn-retour {
     display: block !important;
-    padding: 16px 16px 16px 16px !important;
-    margin-top: 24px !important;
-    font-size: 1.1rem !important;
-    min-height: 56px !important;
+    padding: 8px 16px !important;
+    margin-top: 8px !important;
+    font-size: 1rem !important;
+    min-height: 44px !important;
     width: 100% !important;
     text-align: left !important;
+  }
+
+  #section-header {
+    padding: 4px 16px !important;
   }
 
   .sidebar-header {

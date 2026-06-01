@@ -32,6 +32,8 @@ const detailContenu  = document.getElementById('detail-contenu');
 const msgStatut      = document.getElementById('msg-statut');
 const sidebar        = document.getElementById('sidebar');
 const contenu        = document.getElementById('contenu');
+const sectionHeader  = document.getElementById('section-header');
+const sectionTitre   = document.getElementById('section-titre');
 
 // ─── ÉTAT ─────────────────────────────────────────────────────
 let noteActive = null;
@@ -39,6 +41,16 @@ let estNouvelle = false;
 
 // ─── DÉTECTION MOBILE ─────────────────────────────────────────
 const isMobile = () => window.innerWidth <= 768;
+
+// ─── EN-TÊTE DE SECTION ───────────────────────────────────────
+function afficherHeader(titre) {
+  sectionTitre.textContent = titre;
+  sectionHeader.classList.remove('hidden');
+}
+
+function cacherHeader() {
+  sectionHeader.classList.add('hidden');
+}
 
 // ─── NAVIGATION MOBILE ────────────────────────────────────────
 function afficherContenu() {
@@ -57,6 +69,7 @@ function retourListe() {
   formulaire.classList.add('hidden');
   vueDetails.classList.add('hidden');
   etatVide.classList.remove('hidden');
+  cacherHeader();
 }
 
 // ─── FORMATER LA DATE ─────────────────────────────────────────
@@ -122,6 +135,7 @@ function voirDetails(note) {
   formulaire.classList.add('hidden');
   vueDetails.classList.remove('hidden');
 
+  afficherHeader('📄 ' + note.titre);
   afficherListe(getLocalNotes());
   afficherContenu();
 }
@@ -138,6 +152,7 @@ function editerNote(note) {
   vueDetails.classList.add('hidden');
   formulaire.classList.remove('hidden');
 
+  afficherHeader('✏️ Modifier : ' + note.titre);
   inputTitre.focus();
   afficherContenu();
 }
@@ -154,6 +169,7 @@ function nouvelleNote() {
   vueDetails.classList.add('hidden');
   formulaire.classList.remove('hidden');
 
+  afficherHeader('➕ Nouvelle note');
   inputTitre.focus();
   afficherContenu();
 }
@@ -215,6 +231,7 @@ async function supprimerNote(note) {
       formulaire.classList.add('hidden');
       vueDetails.classList.add('hidden');
       etatVide.classList.remove('hidden');
+      cacherHeader();
       if (isMobile()) retourListe();
     }
 
@@ -234,6 +251,7 @@ btnFermer.addEventListener('click', () => {
   noteActive = null;
   vueDetails.classList.add('hidden');
   etatVide.classList.remove('hidden');
+  cacherHeader();
   afficherListe(getLocalNotes());
   if (isMobile()) retourListe();
 });
@@ -241,6 +259,7 @@ btnFermer.addEventListener('click', () => {
 btnAnnuler.addEventListener('click', () => {
   formulaire.classList.add('hidden');
   noteActive ? voirDetails(noteActive) : etatVide.classList.remove('hidden');
+  if (!noteActive) cacherHeader();
   if (isMobile() && !noteActive) retourListe();
 });
 

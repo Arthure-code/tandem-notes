@@ -59,34 +59,6 @@ SQLite next to itself and a clone runs as is; with a connection string,
 it uses SQL Server. Browsers are only accepted from the origins listed in
 `AllowedOrigins`, which are the Tauri ones by default.
 
-## Structure
-
-```
-notes-api/
-  notes-api/
-    Controllers/NotesController.cs   the five routes under /api/notes
-    Services/NoteService.cs          the only class that touches the DbContext
-    Interfaces/INoteService.cs
-    Models/Note.cs                   validation attributes
-    Data/AppDbContext.cs             UTC conversion for the dates
-    Program.cs                       provider choice, CORS, HTTPS, Swagger
-    appsettings.json                 connection string and allowed origins
-    notes-api.http                   ready-to-send requests
-  notes-api.Tests/
-    ApiFactory.cs                    the app on an in-memory SQLite database
-    NotesEndpointsTests.cs           11 tests through HTTP
-notes-tauri/
-  src/
-    index.html
-    main.js                          views, saving, deleting, sync
-    config.js                        API_URL
-    services/noteService.js          fetch calls
-    services/localService.js         local copy and pending queue
-    styles.css
-    vendor/bootstrap/                Bootstrap 5.3.3, bundled for offline use
-  src-tauri/                         Tauri 2 shell, desktop and Android
-```
-
 ## Running it
 
 The API, from `notes-api/notes-api`:
@@ -96,12 +68,7 @@ dotnet run --launch-profile http
 ```
 
 It listens on `http://localhost:5011`, creates `notes.db` on first start
-and serves Swagger at `/swagger` in Development. The tests, from
-`notes-api`:
-
-```bash
-dotnet test
-```
+and serves Swagger at `/swagger` in Development.
 
 The desktop app, from `notes-tauri` (Rust and the Tauri prerequisites
 installed):
@@ -115,6 +82,19 @@ npm run tauri dev
 instance, change `API_URL` there, and, on Android, use the machine's
 address on the network rather than `localhost`. `npm run tauri android
 dev` runs it on a connected device or emulator.
+
+## Tests
+
+From `notes-api`:
+
+```bash
+dotnet test
+```
+
+Eleven xUnit tests go through HTTP against the real pipeline, with the
+database swapped for an in-memory SQLite connection: status codes,
+validation, ordering, the dates the service sets, and the CORS header
+for an allowed origin versus an unknown one.
 
 ## Stack
 

@@ -1,396 +1,444 @@
+import { getAllNotes, createNote, updateNote, deleteNote } from './services/noteService.js';
 import {
-  getAllNotes,
-  createNote,
-  updateNote,
-  deleteNote
-} from './services/noteService.js';
-
-import {
-  syncFromApi,
   getLocalNotes,
+  saveLocalNotes,
   addLocalNote,
   updateLocalNote,
   deleteLocalNote,
-  addPendingNote,
-  getPendingNotes,
-  removePendingNote,
-  clearPendingNotes
+  getPendingChanges,
+  addPendingChange,
+  removePendingChange
 } from './services/localService.js';
 
-// ─── MESSAGES CONVIVIAUX ──────────────────────────────────────
 const MESSAGES = {
-  noteCreee:         '✅ Note enregistrée !',
-  noteModifiee:      '✅ Note mise à jour !',
-  noteSupprimee:     '🗑️ Note supprimée.',
-  noteLocale:        '💾 Sauvegardé localement.',
-  modifLocale:       '💾 Modification sauvegardée.',
-  suppressionLocale: '🗑️ Suppression enregistrée.',
-  syncEnCours:       '🔄 Synchronisation en cours...',
-  syncComplete:      '✅ Tout est à jour !',
-  syncPartielle:     '⚠️ Certaines notes n\'ont pas pu être synchronisées.',
-  titreObligatoire:  '⚠️ Veuillez entrer un titre.',
-  erreurReseau:      '⚠️ Une erreur est survenue. Veuillez réessayer.',
+  created: 'Note saved.',
+  updated: 'Note updated.',
+  deleted: 'Note deleted.',
+  savedLocally: 'Saved on this device. It will sync when the server is reachable.',
+  deletedLocally: 'Deleted on this device. It will sync when the server is reachable.',
+  syncing: 'Syncing your changes...',
+  synced: 'Everything is up to date.',
+  syncPartial: 'Some changes could not be synced yet.',
+  titleRequired: 'Please enter a title.'
 };
 
-// ─── ÉLÉMENTS DOM ─────────────────────────────────────────────
-const listeNotes      = document.getElementById('liste-notes');
-const btnNouvelle     = document.getElementById('btn-nouvelle');
-const btnSauvegarder  = document.getElementById('btn-sauvegarder');
-const btnAnnuler      = document.getElementById('btn-annuler');
-const btnActualiser   = document.getElementById('btn-actualiser');
-const btnRetour       = document.getElementById('btn-retour');
-const btnFermer       = document.getElementById('btn-fermer');
-const inputTitre      = document.getElementById('input-titre');
-const inputDetails    = document.getElementById('input-details');
-const formulaire      = document.getElementById('formulaire');
-const etatVide        = document.getElementById('etat-vide');
-const vueDetails      = document.getElementById('vue-details');
-const detailTitre     = document.getElementById('detail-titre');
-const detailDate      = document.getElementById('detail-date');
-const detailContenu   = document.getElementById('detail-contenu');
-const msgStatut       = document.getElementById('msg-statut');
-const sidebar         = document.getElementById('sidebar');
-const contenu         = document.getElementById('contenu');
-const sectionHeader   = document.getElementById('section-header');
-const sectionTitre    = document.getElementById('section-titre');
+const LOCAL_ID_PREFIX = 'local-';
+const MOBILE_BREAKPOINT = 768;
+const MESSAGE_DURATION = 3000;
+
+const noteList = document.getElementById('note-list');
+const btnNew = document.getElementById('btn-new');
+const btnRefresh = document.getElementById('btn-refresh');
+const btnBack = document.getElementById('btn-back');
+const btnClose = document.getElementById('btn-close');
+const btnCancel = document.getElementById('btn-cancel');
+const noteForm = document.getElementById('note-form');
+const inputTitle = document.getElementById('input-title');
+const inputBody = document.getElementById('input-body');
+const emptyState = document.getElementById('empty-state');
+const detailView = document.getElementById('detail-view');
+const detailTitle = document.getElementById('detail-title');
+const detailDate = document.getElementById('detail-date');
+const detailBody = document.getElementById('detail-body');
+const statusMessage = document.getElementById('status-message');
+const sidebar = document.getElementById('sidebar');
+const content = document.getElementById('content');
+const sectionHeader = document.getElementById('section-header');
+const sectionTitle = document.getElementById('section-title');
 const statusIndicator = document.getElementById('status-indicator');
+const confirmDialog = document.getElementById('confirm-dialog');
+const confirmText = document.getElementById('confirm-text');
+const confirmDelete = document.getElementById('confirm-delete');
+const confirmCancel = document.getElementById('confirm-cancel');
 
-// ─── ÉTAT ─────────────────────────────────────────────────────
-let noteActive = null;
-let estNouvelle = false;
+let activeNote = null;
+let isNewNote = false;
 let isOnline = navigator.onLine;
+let messageTimer = null;
 
-// ─── DÉTECTION MOBILE ─────────────────────────────────────────
-const isMobile = () => window.innerWidth <= 768;
+// ─── Helpers ──────────────────────────────────────────────────
 
-// ─── EN-TÊTE DE SECTION ───────────────────────────────────────
-function afficherHeader(titre) {
-  sectionTitre.textContent = titre;
+function isMobile() {
+  return window.innerWidth <= MOBILE_BREAKPOINT;
+}
+
+function isLocalId(id) {
+  return typeof id === 'string' && id.startsWith(LOCAL_ID_PREFIX);
+}
+
+function formatDate(isoDate) {
+  return new Date(isoDate).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+}
+
+function hideMessage() {
+  statusMessage.classList.add('hidden');
+}
+
+function showMessage(message, isError = false) {
+  statusMessage.textContent = message;
+  statusMessage.classList.toggle('error', isError);
+  statusMessage.classList.remove('hidden');
+  clearTimeout(messageTimer);
+  messageTimer = setTimeout(hideMessage, MESSAGE_DURATION);
+}
+
+function setOnline(online) {
+  isOnline = online;
+  statusIndicator.textContent = online ? 'Online' : 'Offline';
+  statusIndicator.classList.toggle('status-online', online);
+  statusIndicator.classList.toggle('status-offline', !online);
+}
+
+function askToDelete(note) {
+  confirmText.textContent = `Delete "${note.title}"?`;
+  confirmDialog.showModal();
+  return new Promise(function waitForAnswer(resolve) {
+    confirmDialog.addEventListener('close', function onClose() {
+      resolve(confirmDialog.returnValue === 'delete');
+    }, { once: true });
+  });
+}
+
+// ─── Panels ───────────────────────────────────────────────────
+
+function showHeader(title) {
+  sectionTitle.textContent = title;
   sectionHeader.classList.remove('hidden');
 }
 
-function cacherHeader() {
+function hideHeader() {
   sectionHeader.classList.add('hidden');
 }
 
-// ─── INDICATEUR EN LIGNE / HORS LIGNE ─────────────────────────
-function updateOnlineStatus() {
-  isOnline = navigator.onLine;
-  if (statusIndicator) {
-    statusIndicator.textContent = isOnline ? '🟢 Connecté' : '🔴 Hors ligne';
-    statusIndicator.className = isOnline ? 'status-online' : 'status-offline';
-  }
-  if (isOnline) syncPendingNotes();
-}
-
-// ─── SYNCHRONISER LES NOTES EN ATTENTE ────────────────────────
-async function syncPendingNotes() {
-  const pending = getPendingNotes();
-  if (pending.length === 0) return;
-
-  afficherStatut(MESSAGES.syncEnCours);
-
-  for (let i = pending.length - 1; i >= 0; i--) {
-    const { note, operation } = pending[i];
-    try {
-      if (operation === 'create') {
-        const created = await createNote(note.titre, note.details);
-        updateLocalNote(note.id, created.titre, created.details);
-      } else if (operation === 'update') {
-        await updateNote(note.id, note.titre, note.details);
-      } else if (operation === 'delete') {
-        await deleteNote(note.id);
-      }
-      removePendingNote(i);
-    } catch (err) {
-      console.warn('Sync échouée', err);
-    }
-  }
-
-  await chargerNotes();
-  const remaining = getPendingNotes().length;
-  if (remaining === 0) {
-    afficherStatut(MESSAGES.syncComplete);
-  } else {
-    afficherStatut(MESSAGES.syncPartielle, true);
+function showPanel(panel) {
+  for (const element of [emptyState, detailView, noteForm]) {
+    element.classList.toggle('hidden', element !== panel);
   }
 }
 
-// ─── NAVIGATION MOBILE ────────────────────────────────────────
-function afficherContenu() {
-  if (isMobile()) {
-    contenu.classList.add('visible-mobile');
-    sidebar.classList.add('hidden-mobile');
-    btnRetour.classList.remove('d-none');
-  }
+function openContentOnMobile() {
+  if (!isMobile()) return;
+  content.classList.add('visible-mobile');
+  sidebar.classList.add('hidden-mobile');
+  btnBack.classList.remove('d-none');
 }
 
-function retourListe() {
-  contenu.classList.remove('visible-mobile');
+function clearSelection() {
+  activeNote = null;
+  showPanel(emptyState);
+  hideHeader();
+  renderList(getLocalNotes());
+}
+
+function backToList() {
+  content.classList.remove('visible-mobile');
   sidebar.classList.remove('hidden-mobile');
-  btnRetour.classList.add('d-none');
-  noteActive = null;
-  formulaire.classList.add('hidden');
-  vueDetails.classList.add('hidden');
-  etatVide.classList.remove('hidden');
-  cacherHeader();
+  btnBack.classList.add('d-none');
+  clearSelection();
 }
 
-// ─── FORMATER LA DATE ─────────────────────────────────────────
-function formaterDate(dateStr) {
-  return new Date(dateStr).toLocaleDateString('fr-CA', {
-    year: 'numeric', month: 'short', day: 'numeric',
-    hour: '2-digit', minute: '2-digit'
+// ─── List ─────────────────────────────────────────────────────
+
+function createActionButton(label, className, onClick) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = className;
+  button.textContent = label;
+  button.addEventListener('click', function onAction(event) {
+    event.stopPropagation();
+    onClick();
   });
+  return button;
 }
 
-// ─── AFFICHER UN MESSAGE ──────────────────────────────────────
-function afficherStatut(message, erreur = false) {
-  msgStatut.textContent = message;
-  msgStatut.className = `statut ${erreur ? 'erreur' : ''}`;
-  msgStatut.classList.remove('hidden');
-  setTimeout(() => msgStatut.classList.add('hidden'), 3000);
+function createListItem(note, pendingIds) {
+  const item = document.createElement('li');
+  item.dataset.id = note.id;
+  if (activeNote && activeNote.id === note.id) item.classList.add('active');
+
+  const title = document.createElement('div');
+  title.className = 'note-title';
+  title.textContent = note.title;
+  if (pendingIds.has(note.id)) {
+    const badge = document.createElement('span');
+    badge.className = 'badge-pending';
+    badge.textContent = 'Pending sync';
+    title.append(' ', badge);
+  }
+
+  const date = document.createElement('div');
+  date.className = 'note-date';
+  date.textContent = formatDate(note.updatedAt);
+
+  const actions = document.createElement('div');
+  actions.className = 'note-actions';
+  actions.append(
+    createActionButton('Edit', 'btn-edit', function edit() { editNote(note); }),
+    createActionButton('Delete', 'btn-delete', function remove() { removeNote(note); })
+  );
+
+  item.append(title, date, actions);
+  item.addEventListener('click', function open() { viewNote(note); });
+  return item;
 }
 
-// ─── AFFICHER LA LISTE ────────────────────────────────────────
-function afficherListe(notes) {
-  listeNotes.innerHTML = '';
+function renderList(notes) {
+  noteList.replaceChildren();
 
   if (notes.length === 0) {
-    listeNotes.innerHTML = '<li style="padding:12px;color:#6c7086">Aucune note</li>';
+    const empty = document.createElement('li');
+    empty.className = 'note-empty';
+    empty.textContent = 'No notes yet';
+    noteList.append(empty);
     return;
   }
 
-  const pending = getPendingNotes();
-
-  notes.forEach(note => {
-    const li = document.createElement('li');
-    if (noteActive && noteActive.id === note.id) li.classList.add('active');
-
-    const isPending = pending.some(p => p.note.id === note.id);
-    const pendingBadge = isPending ? '<span class="badge-pending">⏳</span>' : '';
-
-    li.innerHTML = `
-      <div class="note-titre">${note.titre || 'Sans titre'} ${pendingBadge}</div>
-      <div class="note-date">${formaterDate(note.updatedAt)}</div>
-      <div class="note-actions">
-        <button class="btn-edit">✏️ Modifier</button>
-        <button class="btn-delete">🗑️ Supprimer</button>
-      </div>
-    `;
-
-    li.addEventListener('click', (e) => {
-      if (e.target.classList.contains('btn-edit')) {
-        editerNote(note);
-      } else if (e.target.classList.contains('btn-delete')) {
-        supprimerNote(note);
-      } else {
-        voirDetails(note);
-      }
-    });
-
-    listeNotes.appendChild(li);
-  });
+  const pendingIds = new Set(getPendingChanges().map((change) => change.note.id));
+  for (const note of notes) {
+    noteList.append(createListItem(note, pendingIds));
+  }
 }
 
-// ─── VOIR LES DÉTAILS ─────────────────────────────────────────
-function voirDetails(note) {
-  noteActive = note;
-  detailTitre.textContent = note.titre;
-  detailDate.textContent = formaterDate(note.updatedAt);
-  detailContenu.textContent = note.details;
-
-  etatVide.classList.add('hidden');
-  formulaire.classList.add('hidden');
-  vueDetails.classList.remove('hidden');
-
-  afficherHeader('📄 ' + note.titre);
-  afficherListe(getLocalNotes());
-  afficherContenu();
-}
-
-// ─── ÉDITER UNE NOTE ──────────────────────────────────────────
-function editerNote(note) {
-  noteActive = note;
-  estNouvelle = false;
-
-  inputTitre.value = note.titre;
-  inputDetails.value = note.details;
-
-  etatVide.classList.add('hidden');
-  vueDetails.classList.add('hidden');
-  formulaire.classList.remove('hidden');
-
-  afficherHeader('✏️ Modifier : ' + note.titre);
-  inputTitre.focus();
-  afficherContenu();
-}
-
-// ─── NOUVELLE NOTE ────────────────────────────────────────────
-function nouvelleNote() {
-  noteActive = null;
-  estNouvelle = true;
-
-  inputTitre.value = '';
-  inputDetails.value = '';
-
-  etatVide.classList.add('hidden');
-  vueDetails.classList.add('hidden');
-  formulaire.classList.remove('hidden');
-
-  cacherHeader();
-  inputTitre.focus();
-  afficherContenu();
-}
-
-// ─── CHARGER LES NOTES ────────────────────────────────────────
-async function chargerNotes() {
+async function loadNotes() {
   try {
     const notes = await getAllNotes();
-    syncFromApi(notes);
-    afficherListe(notes);
-  } catch (err) {
-    afficherListe(getLocalNotes());
+    saveLocalNotes(notes);
+    setOnline(true);
+    renderList(notes);
+  } catch {
+    setOnline(false);
+    renderList(getLocalNotes());
   }
 }
 
-// ─── SAUVEGARDER ──────────────────────────────────────────────
-async function sauvegarder() {
-  const titre = inputTitre.value.trim();
-  const details = inputDetails.value.trim();
+// ─── Views ────────────────────────────────────────────────────
 
-  if (!titre) {
-    afficherStatut(MESSAGES.titreObligatoire, true);
-    inputTitre.focus();
+function viewNote(note) {
+  activeNote = note;
+  detailTitle.textContent = note.title;
+  detailDate.textContent = formatDate(note.updatedAt);
+  detailBody.textContent = note.body;
+  showPanel(detailView);
+  showHeader(note.title);
+  renderList(getLocalNotes());
+  openContentOnMobile();
+}
+
+function editNote(note) {
+  activeNote = note;
+  isNewNote = false;
+  inputTitle.value = note.title;
+  inputBody.value = note.body;
+  showPanel(noteForm);
+  showHeader(`Editing: ${note.title}`);
+  inputTitle.focus();
+  openContentOnMobile();
+}
+
+function newNote() {
+  activeNote = null;
+  isNewNote = true;
+  inputTitle.value = '';
+  inputBody.value = '';
+  showPanel(noteForm);
+  showHeader('New note');
+  inputTitle.focus();
+  openContentOnMobile();
+}
+
+// ─── Saving ───────────────────────────────────────────────────
+
+// A note created offline is still only a queued "create": editing it just
+// refreshes that entry so the server receives the final text once.
+function queueUpdate(note) {
+  const pending = getPendingChanges();
+  const index = pending.findIndex((change) => change.note.id === note.id);
+  if (index === -1) {
+    addPendingChange(note, 'update');
+    return;
+  }
+  removePendingChange(index);
+  addPendingChange(note, pending[index].operation);
+}
+
+function saveOffline(title, body) {
+  const now = new Date().toISOString();
+  if (isNewNote) {
+    const note = { id: `${LOCAL_ID_PREFIX}${Date.now()}`, title, body, createdAt: now, updatedAt: now };
+    addLocalNote(note);
+    addPendingChange(note, 'create');
+    isNewNote = false;
+    showMessage(MESSAGES.savedLocally);
+    viewNote(note);
     return;
   }
 
-  if (!isOnline) {
-    // ─── MODE HORS LIGNE ──────────────────────────────────────
-    if (estNouvelle) {
-      const noteLocale = {
-        id: `local_${Date.now()}`,
-        titre,
-        details,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      addLocalNote(noteLocale);
-      addPendingNote(noteLocale, 'create');
-      noteActive = noteLocale;
-      estNouvelle = false;
-      afficherStatut(MESSAGES.noteLocale);
-      voirDetails(noteLocale);
-    } else {
-      const noteModifiee = {
-        ...noteActive,
-        titre,
-        details,
-        updatedAt: new Date().toISOString()
-      };
-      updateLocalNote(noteActive.id, titre, details);
-      addPendingNote(noteModifiee, 'update');
-      noteActive = noteModifiee;
-      afficherStatut(MESSAGES.modifLocale);
-      voirDetails(noteModifiee);
-    }
-    afficherListe(getLocalNotes());
+  const note = { ...activeNote, title, body, updatedAt: now };
+  updateLocalNote(note.id, title, body);
+  queueUpdate(note);
+  showMessage(MESSAGES.savedLocally);
+  viewNote(note);
+}
+
+async function saveOnline(title, body) {
+  if (isNewNote) {
+    const note = await createNote(title, body);
+    isNewNote = false;
+    showMessage(MESSAGES.created);
+    viewNote(note);
+  } else {
+    const note = await updateNote(activeNote.id, title, body);
+    showMessage(MESSAGES.updated);
+    viewNote(note);
+  }
+  await loadNotes();
+}
+
+async function saveNote(event) {
+  event.preventDefault();
+  const title = inputTitle.value.trim();
+  const body = inputBody.value.trim();
+
+  if (!title) {
+    showMessage(MESSAGES.titleRequired, true);
+    inputTitle.focus();
     return;
   }
 
-  // ─── MODE EN LIGNE ────────────────────────────────────────
+  if (!isOnline || isLocalId(activeNote?.id)) {
+    saveOffline(title, body);
+    return;
+  }
+
   try {
-    if (estNouvelle) {
-      const note = await createNote(titre, details);
-      addLocalNote(note);
-      noteActive = note;
-      estNouvelle = false;
-      afficherStatut(MESSAGES.noteCreee);
-      voirDetails(note);
-    } else {
-      const note = await updateNote(noteActive.id, titre, details);
-      updateLocalNote(noteActive.id, titre, details);
-      noteActive = note;
-      afficherStatut(MESSAGES.noteModifiee);
-      voirDetails(note);
-    }
-    await chargerNotes();
-  } catch (err) {
-    afficherStatut(MESSAGES.erreurReseau, true);
+    await saveOnline(title, body);
+  } catch {
+    setOnline(false);
+    saveOffline(title, body);
   }
 }
 
-// ─── SUPPRIMER ────────────────────────────────────────────────
-async function supprimerNote(note) {
-  if (!confirm(`Supprimer "${note.titre}" ?`)) return;
+// ─── Deleting ─────────────────────────────────────────────────
 
-  if (!isOnline) {
-    deleteLocalNote(note.id);
-    addPendingNote(note, 'delete');
-    afficherStatut(MESSAGES.suppressionLocale);
-    if (noteActive && noteActive.id === note.id) {
-      noteActive = null;
-      formulaire.classList.add('hidden');
-      vueDetails.classList.add('hidden');
-      etatVide.classList.remove('hidden');
-      cacherHeader();
-      if (isMobile()) retourListe();
-    }
-    afficherListe(getLocalNotes());
+function afterDelete(note) {
+  if (activeNote && activeNote.id === note.id) {
+    if (isMobile()) backToList();
+    else clearSelection();
+    return;
+  }
+  renderList(getLocalNotes());
+}
+
+function deleteOffline(note) {
+  deleteLocalNote(note.id);
+  const pending = getPendingChanges();
+  const index = pending.findIndex((change) => change.note.id === note.id);
+  if (index !== -1) removePendingChange(index);
+  // A note the server never saw has nothing to delete there.
+  if (!isLocalId(note.id)) addPendingChange(note, 'delete');
+  showMessage(MESSAGES.deletedLocally);
+  afterDelete(note);
+}
+
+async function removeNote(note) {
+  const confirmed = await askToDelete(note);
+  if (!confirmed) return;
+
+  if (!isOnline || isLocalId(note.id)) {
+    deleteOffline(note);
     return;
   }
 
   try {
     await deleteNote(note.id);
     deleteLocalNote(note.id);
-    if (noteActive && noteActive.id === note.id) {
-      noteActive = null;
-      formulaire.classList.add('hidden');
-      vueDetails.classList.add('hidden');
-      etatVide.classList.remove('hidden');
-      cacherHeader();
-      if (isMobile()) retourListe();
-    }
-    afficherStatut(MESSAGES.noteSupprimee);
-    await chargerNotes();
-  } catch (err) {
-    afficherStatut(MESSAGES.erreurReseau, true);
+    showMessage(MESSAGES.deleted);
+    afterDelete(note);
+    await loadNotes();
+  } catch {
+    setOnline(false);
+    deleteOffline(note);
   }
 }
 
-// ─── ÉVÉNEMENTS ───────────────────────────────────────────────
-btnNouvelle.addEventListener('click', nouvelleNote);
-btnSauvegarder.addEventListener('click', sauvegarder);
-btnRetour.addEventListener('click', retourListe);
+// ─── Sync ─────────────────────────────────────────────────────
 
-btnFermer.addEventListener('click', () => {
-  noteActive = null;
-  vueDetails.classList.add('hidden');
-  etatVide.classList.remove('hidden');
-  cacherHeader();
-  afficherListe(getLocalNotes());
-  if (isMobile()) retourListe();
+async function pushChange(change) {
+  const { note, operation } = change;
+  if (operation === 'create') {
+    const created = await createNote(note.title, note.body);
+    deleteLocalNote(note.id);
+    addLocalNote(created);
+    if (activeNote && activeNote.id === note.id) activeNote = created;
+  } else if (operation === 'update') {
+    await updateNote(note.id, note.title, note.body);
+  } else {
+    await deleteNote(note.id);
+  }
+}
+
+// Changes are replayed in the order they were made. A change the server
+// could not be asked about stays at the front of the queue, so the next
+// one to remove is always right after those. A change the server rejected
+// (the note was deleted elsewhere, for instance) is dropped for good.
+async function syncPendingChanges() {
+  const pending = getPendingChanges();
+  if (pending.length === 0) return;
+
+  showMessage(MESSAGES.syncing);
+  let failed = 0;
+  for (const change of pending) {
+    try {
+      await pushChange(change);
+      removePendingChange(failed);
+    } catch (error) {
+      if (error.status) removePendingChange(failed);
+      else failed += 1;
+    }
+  }
+
+  await loadNotes();
+  if (activeNote) viewNote(activeNote);
+  showMessage(failed === 0 ? MESSAGES.synced : MESSAGES.syncPartial, failed > 0);
+}
+
+async function goOnline() {
+  setOnline(true);
+  await syncPendingChanges();
+  await loadNotes();
+}
+
+// ─── Events ───────────────────────────────────────────────────
+
+btnNew.addEventListener('click', newNote);
+noteForm.addEventListener('submit', saveNote);
+btnBack.addEventListener('click', backToList);
+
+btnClose.addEventListener('click', function closeDetail() {
+  if (isMobile()) backToList();
+  else clearSelection();
 });
 
-btnAnnuler.addEventListener('click', () => {
-  formulaire.classList.add('hidden');
-  noteActive ? voirDetails(noteActive) : etatVide.classList.remove('hidden');
-  if (!noteActive) cacherHeader();
-  if (isMobile() && !noteActive) retourListe();
+btnCancel.addEventListener('click', function cancelEdit() {
+  if (activeNote) {
+    viewNote(activeNote);
+  } else if (isMobile()) {
+    backToList();
+  } else {
+    clearSelection();
+  }
 });
 
-btnActualiser.addEventListener('click', async () => {
-  btnActualiser.textContent = '⏳';
-  btnActualiser.disabled = true;
-  await chargerNotes();
-  btnActualiser.textContent = '🔄';
-  btnActualiser.disabled = false;
+btnRefresh.addEventListener('click', async function refresh() {
+  btnRefresh.disabled = true;
+  await goOnline();
+  btnRefresh.disabled = false;
 });
 
-// ─── ÉVÉNEMENTS RÉSEAU ────────────────────────────────────────
-window.addEventListener('online', updateOnlineStatus);
-window.addEventListener('offline', updateOnlineStatus);
+confirmDelete.addEventListener('click', function confirmYes() { confirmDialog.close('delete'); });
+confirmCancel.addEventListener('click', function confirmNo() { confirmDialog.close('cancel'); });
 
-// ─── INITIALISATION ───────────────────────────────────────────
-updateOnlineStatus();
-chargerNotes();
+window.addEventListener('online', goOnline);
+window.addEventListener('offline', function goOffline() { setOnline(false); });
+
+goOnline();

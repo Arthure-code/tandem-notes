@@ -1,10 +1,9 @@
-﻿
 using Microsoft.EntityFrameworkCore;
-using notes_api.Data;
-using notes_api.Interfaces;
-using notes_api.Services;
+using NotesApi.Data;
+using NotesApi.Interfaces;
+using NotesApi.Services;
 
-namespace notes_api
+namespace NotesApi
 {
     public class Program
     {
@@ -12,57 +11,54 @@ namespace notes_api
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // Add services to the container.
-
+            builder.Services.AddRouting(options => options.LowercaseUrls = true);
             builder.Services.AddControllers();
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
-            // SQLite
-            // builder.Services.AddDbContext<AppDbContext>(options =>options.UseSqlite("Data Source=notes.db"));
+            // SQL Server when a connection string is configured (the hosted
+            // API), SQLite in a local file otherwise, so a clone runs as is.
+            var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+            if (string.IsNullOrWhiteSpace(connectionString))
+            {
+                builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlite("Data Source=notes.db"));
+            }
+            else
+            {
+                builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlServer(connectionString));
+            }
 
-            // ─── SQL SERVER ───────────────────────────────────────────────
-            builder.Services.AddDbContext<AppDbContext>(options =>
-                options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-            // Injection de dépendances
             builder.Services.AddScoped<INoteService, NoteService>();
 
-            // CORS
+            // Only the origins listed in configuration may call the API from
+            // a browser: the origins of the Tauri app by default.
+            var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? [];
             builder.Services.AddCors(options =>
             {
-                options.AddPolicy("AllowAll", policy =>
+                options.AddDefaultPolicy(policy =>
                 {
-                    policy.AllowAnyOrigin()
+                    policy.WithOrigins(allowedOrigins)
                           .AllowAnyMethod()
                           .AllowAnyHeader();
                 });
             });
 
-
             var app = builder.Build();
 
-            // Créer la base de données automatiquement
             using (var scope = app.Services.CreateScope())
             {
                 var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
                 db.Database.EnsureCreated();
             }
 
-            // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
 
-            app.UseCors("AllowAll");
-            //app.UseHttpsRedirection();
-
-            app.UseAuthorization();
-
-
+            app.UseHttpsRedirection();
+            app.UseCors();
             app.MapControllers();
 
             app.Run();

@@ -1,6 +1,30 @@
-@notes_api_HostAddress = http://localhost:5011
+@host = http://localhost:5011
 
-GET {{notes_api_HostAddress}}/weatherforecast/
+### All the notes, newest change first
+GET {{host}}/api/notes
 Accept: application/json
 
-###
+### One note
+GET {{host}}/api/notes/1
+Accept: application/json
+
+### Create a note
+POST {{host}}/api/notes
+Content-Type: application/json
+
+{
+  "title": "Groceries",
+  "body": "Milk, bread, eggs"
+}
+
+### Update a note
+PUT {{host}}/api/notes/1
+Content-Type: application/json
+
+{
+  "title": "Groceries",
+  "body": "Milk, bread, eggs, butter"
+}
+
+### Delete a note
+DELETE {{host}}/api/notes/1

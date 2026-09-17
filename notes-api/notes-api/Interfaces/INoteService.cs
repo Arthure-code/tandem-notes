@@ -1,6 +1,6 @@
-﻿using notes_api.Models;
+using NotesApi.Models;
 
-namespace notes_api.Interfaces
+namespace NotesApi.Interfaces
 {
     public interface INoteService
     {

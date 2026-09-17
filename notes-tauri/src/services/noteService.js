@@ -1,47 +1,51 @@
-// ─── CONFIGURATION API ────────────────────────────────────────
-const API_URL = 'https://notes-api-tp3-agdjeec8e5aef8hs.canadacentral-01.azurewebsites.net/api/notes';
+import { API_URL } from '../config.js';
 
-// ─── OBTENIR TOUTES LES NOTES ─────────────────────────────────
+const JSON_HEADERS = { 'Content-Type': 'application/json' };
+
+// An HTTP error carries its status so callers can tell a rejected request
+// (which will not succeed later) from a server that could not be reached.
+function httpError(message, status) {
+  const error = new Error(`${message} (${status})`);
+  error.status = status;
+  return error;
+}
+
+async function parseOrThrow(response, message) {
+  if (!response.ok) throw httpError(message, response.status);
+  return response.json();
+}
+
 export async function getAllNotes() {
   const response = await fetch(API_URL);
-  if (!response.ok) throw new Error('Erreur lors du chargement des notes');
-  return await response.json();
+  return parseOrThrow(response, 'Could not load the notes');
 }
 
-// ─── OBTENIR UNE NOTE PAR ID ──────────────────────────────────
 export async function getNoteById(id) {
   const response = await fetch(`${API_URL}/${id}`);
-  if (!response.ok) throw new Error('Note introuvable');
-  return await response.json();
+  return parseOrThrow(response, 'Note not found');
 }
 
-// ─── CRÉER UNE NOTE ───────────────────────────────────────────
-export async function createNote(titre, details) {
+export async function createNote(title, body) {
   const response = await fetch(API_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ titre, details })
+    headers: JSON_HEADERS,
+    body: JSON.stringify({ title, body })
   });
-  if (!response.ok) throw new Error('Erreur lors de la création');
-  return await response.json();
+  return parseOrThrow(response, 'Could not create the note');
 }
 
-// ─── MODIFIER UNE NOTE ────────────────────────────────────────
-export async function updateNote(id, titre, details) {
+export async function updateNote(id, title, body) {
   const response = await fetch(`${API_URL}/${id}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ id, titre, details })
+    headers: JSON_HEADERS,
+    body: JSON.stringify({ title, body })
   });
-  if (!response.ok) throw new Error('Erreur lors de la modification');
-  return await response.json();
+  return parseOrThrow(response, 'Could not update the note');
 }
 
-// ─── SUPPRIMER UNE NOTE ───────────────────────────────────────
 export async function deleteNote(id) {
-  const response = await fetch(`${API_URL}/${id}`, {
-    method: 'DELETE'
-  });
-  if (!response.ok) throw new Error('Erreur lors de la suppression');
+  const response = await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+  // Already gone is the outcome we wanted.
+  if (!response.ok && response.status !== 404) throw httpError('Could not delete the note', response.status);
   return true;
 }

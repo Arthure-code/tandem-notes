@@ -1,73 +1,61 @@
-// ─── SAUVEGARDE LOCALE (localStorage) ────────────────────────
-// Note: SQLite via Tauri sera ajouté dans une prochaine version
-// Pour l'instant on utilise localStorage comme cache local
+// Local copy of the notes and the queue of changes made while offline,
+// both in localStorage so the app opens with content and nothing is lost
+// between two sessions.
 
-const STORAGE_KEY = 'notes_local';
+const NOTES_KEY = 'tandem-notes.notes';
+const PENDING_KEY = 'tandem-notes.pending';
 
-// ─── OBTENIR TOUTES LES NOTES LOCALES ────────────────────────
-export function getLocalNotes() {
-  const data = localStorage.getItem(STORAGE_KEY);
+function read(key) {
+  const data = localStorage.getItem(key);
   return data ? JSON.parse(data) : [];
 }
 
-// ─── SAUVEGARDER TOUTES LES NOTES EN LOCAL ───────────────────
+function write(key, value) {
+  localStorage.setItem(key, JSON.stringify(value));
+}
+
+export function getLocalNotes() {
+  return read(NOTES_KEY);
+}
+
 export function saveLocalNotes(notes) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
+  write(NOTES_KEY, notes);
 }
 
-// ─── SYNCHRONISER AVEC L'API ──────────────────────────────────
-export function syncFromApi(notes) {
-  saveLocalNotes(notes);
-}
-
-// ─── AJOUTER UNE NOTE EN LOCAL ───────────────────────────────
 export function addLocalNote(note) {
   const notes = getLocalNotes();
   notes.unshift(note);
   saveLocalNotes(notes);
 }
 
-// ─── METTRE À JOUR UNE NOTE EN LOCAL ─────────────────────────
-export function updateLocalNote(id, titre, details) {
+export function updateLocalNote(id, title, body) {
   const notes = getLocalNotes();
-  const index = notes.findIndex(n => n.id === id);
-  if (index === -1) return;
-  notes[index].titre = titre;
-  notes[index].details = details;
-  notes[index].updatedAt = new Date().toISOString();
+  const note = notes.find((n) => n.id === id);
+  if (!note) return;
+  note.title = title;
+  note.body = body;
+  note.updatedAt = new Date().toISOString();
   saveLocalNotes(notes);
 }
 
-// ─── SUPPRIMER UNE NOTE EN LOCAL ─────────────────────────────
 export function deleteLocalNote(id) {
-  const notes = getLocalNotes();
-  const filtered = notes.filter(n => n.id !== id);
-  saveLocalNotes(filtered);
+  saveLocalNotes(getLocalNotes().filter((n) => n.id !== id));
 }
 
-const PENDING_KEY = 'notes_pending_sync';
+// Pending changes: { note, operation: 'create' | 'update' | 'delete', queuedAt }
 
-// ─── AJOUTER UNE NOTE EN ATTENTE DE SYNC ──────────────────────
-export function addPendingNote(note, operation) {
-  const pending = getPendingNotes();
-  pending.push({ note, operation, timestamp: Date.now() });
-  localStorage.setItem(PENDING_KEY, JSON.stringify(pending));
+export function getPendingChanges() {
+  return read(PENDING_KEY);
 }
 
-// ─── OBTENIR LES NOTES EN ATTENTE ─────────────────────────────
-export function getPendingNotes() {
-  const data = localStorage.getItem(PENDING_KEY);
-  return data ? JSON.parse(data) : [];
+export function addPendingChange(note, operation) {
+  const pending = getPendingChanges();
+  pending.push({ note, operation, queuedAt: Date.now() });
+  write(PENDING_KEY, pending);
 }
 
-// ─── VIDER LES NOTES EN ATTENTE ───────────────────────────────
-export function clearPendingNotes() {
-  localStorage.removeItem(PENDING_KEY);
-}
-
-// ─── SUPPRIMER UNE NOTE EN ATTENTE PAR INDEX ──────────────────
-export function removePendingNote(index) {
-  const pending = getPendingNotes();
+export function removePendingChange(index) {
+  const pending = getPendingChanges();
   pending.splice(index, 1);
-  localStorage.setItem(PENDING_KEY, JSON.stringify(pending));
+  write(PENDING_KEY, pending);
 }

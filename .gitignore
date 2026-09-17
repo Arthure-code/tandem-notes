@@ -1,17 +1,34 @@
-# ─── NODE / TAURI ─────────────────────────────────────────────
-notes-tauri/node_modules/
+# Node / Tauri
+node_modules/
+dist/
 notes-tauri/src-tauri/target/
-notes-tauri/.env
+notes-tauri/src-tauri/gen/android/.gradle/
+notes-tauri/src-tauri/gen/android/build/
+notes-tauri/src-tauri/gen/android/app/build/
+notes-tauri/src-tauri/gen/android/local.properties
+.env
 
-# ─── .NET / API ───────────────────────────────────────────────
-notes-api/.vs/
-notes-api/notes-api/bin/
-notes-api/notes-api/obj/
-notes-api/notes-api/*.db
-notes-api/notes-api/*.db-shm
-notes-api/notes-api/*.db-wal
+# .NET
+.vs/
+bin/
+obj/
+*.user
+*.suo
+TestResults/
 
-# ─── SYSTÈME ──────────────────────────────────────────────────
+# Local databases
+*.db
+*.db-shm
+*.db-wal
+
+# Signing material and packages, never in the repository
+*.keystore
+*.jks
+*.apk
+*.aab
+*.idsig
+
+# System
 .DS_Store
 Thumbs.db
 *.log

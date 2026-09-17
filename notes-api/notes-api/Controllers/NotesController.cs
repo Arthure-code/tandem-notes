@@ -1,13 +1,15 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using notes_api.Data;
-using notes_api.Interfaces;
-using notes_api.Models;
+using Microsoft.AspNetCore.Mvc;
+using NotesApi.Interfaces;
+using NotesApi.Models;
 
-namespace notes_api.Controllers
+namespace NotesApi.Controllers
 {
+    // The five routes of the API. Model validation is automatic under
+    // [ApiController]: a note without a title comes back as 400 before the
+    // action runs.
     [ApiController]
     [Route("api/[controller]")]
+    [Produces("application/json")]
     public class NotesController : ControllerBase
     {
         private readonly INoteService _service;
@@ -23,7 +25,7 @@ namespace notes_api.Controllers
             return Ok(await _service.GetAllAsync());
         }
 
-        [HttpGet("{id}")]
+        [HttpGet("{id:int}")]
         public async Task<ActionResult<Note>> GetById(int id)
         {
             var note = await _service.GetByIdAsync(id);
@@ -38,7 +40,7 @@ namespace notes_api.Controllers
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }
 
-        [HttpPut("{id}")]
+        [HttpPut("{id:int}")]
         public async Task<ActionResult<Note>> Update(int id, Note note)
         {
             var updated = await _service.UpdateAsync(id, note);
@@ -46,11 +48,11 @@ namespace notes_api.Controllers
             return Ok(updated);
         }
 
-        [HttpDelete("{id}")]
+        [HttpDelete("{id:int}")]
         public async Task<IActionResult> Delete(int id)
         {
-            var result = await _service.DeleteAsync(id);
-            if (!result) return NotFound();
+            var deleted = await _service.DeleteAsync(id);
+            if (!deleted) return NotFound();
             return NoContent();
         }
     }

@@ -1,10 +1,12 @@
-﻿using Microsoft.EntityFrameworkCore;
-using notes_api.Data;
-using notes_api.Interfaces;
-using notes_api.Models;
+using Microsoft.EntityFrameworkCore;
+using NotesApi.Data;
+using NotesApi.Interfaces;
+using NotesApi.Models;
 
-namespace notes_api.Services
+namespace NotesApi.Services
 {
+    // The only class that touches the database. Notes come back newest
+    // change first; the dates are set here, whatever the client sent.
     public class NoteService : INoteService
     {
         private readonly AppDbContext _context;
@@ -28,11 +30,17 @@ namespace notes_api.Services
 
         public async Task<Note> CreateAsync(Note note)
         {
-            note.CreatedAt = DateTime.UtcNow;
-            note.UpdatedAt = DateTime.UtcNow;
-            _context.Notes.Add(note);
+            var now = DateTime.UtcNow;
+            var created = new Note
+            {
+                Title = note.Title.Trim(),
+                Body = note.Body,
+                CreatedAt = now,
+                UpdatedAt = now,
+            };
+            _context.Notes.Add(created);
             await _context.SaveChangesAsync();
-            return note;
+            return created;
         }
 
         public async Task<Note?> UpdateAsync(int id, Note note)
@@ -40,8 +48,8 @@ namespace notes_api.Services
             var existing = await _context.Notes.FindAsync(id);
             if (existing == null) return null;
 
-            existing.Titre = note.Titre;
-            existing.Details = note.Details;
+            existing.Title = note.Title.Trim();
+            existing.Body = note.Body;
             existing.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
